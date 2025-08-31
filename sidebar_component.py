@@ -78,17 +78,17 @@ class SidebarComponent:
                                 court_options[f"{court['court_name']} ({court['court_number']})"] = court['court_id']
                             else:
                                 court_options[court['court_name']] = court['court_id']
-                    else:
-                        st.info("No courts found. Please add courts first.")
-                        selected_division_id = None
-                        selected_court_id = None
-                    else:
+                        
                         selected_court_name = st.selectbox(
                             "Choose Court:",
                             options=list(court_options.keys()),
                             key="court_select"
                         )
                         selected_court_id = court_options.get(selected_court_name)
+                    else:
+                        st.info("No courts found. Please add courts first.")
+                        selected_division_id = None
+                        selected_court_id = None
                         
                 else:
                     # Show courts for specific division
