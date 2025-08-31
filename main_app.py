@@ -1,4 +1,5 @@
 import streamlit as st
+import os
 from sidebar_component import SidebarComponent
 from court_management_component import CourtManagementComponent
 from division_management_component import DivisionManagementComponent
@@ -6,7 +7,35 @@ from system_management_component import SystemManagementComponent
 from database_operations import db_manager
 from auth_component import AuthComponent
 
+def init_database_if_needed():
+    """Initialize database if it doesn't exist"""
+    db_path = "court_management.db"
+    if not os.path.exists(db_path):
+        try:
+            # Read the schema file
+            with open('database_schema.sql', 'r') as file:
+                schema_sql = file.read()
+            
+            # Create database connection
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            # Execute the schema
+            cursor.executescript(schema_sql)
+            
+            # Commit the changes
+            conn.commit()
+            conn.close()
+            
+            print("✅ Database initialized successfully!")
+            
+        except Exception as e:
+            print(f"❌ Error initializing database: {e}")
+
 def main():
+    # Initialize database if needed
+    init_database_if_needed()
+    
     # Page configuration
     st.set_page_config(
         page_title="Court Employee Management System",

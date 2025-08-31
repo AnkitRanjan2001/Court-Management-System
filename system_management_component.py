@@ -494,12 +494,35 @@ class SystemManagementComponent:
                 
                 if st.button("🔄 Restore Database", type="primary"):
                     with st.spinner("Restoring database..."):
-                        if db_manager.import_database_snapshot(sql_content):
-                            st.success("✅ Database restored successfully!")
-                            st.info("Please refresh the page to see the restored data.")
-                            st.rerun()
-                        else:
-                            st.error("❌ Failed to restore database.")
+                        try:
+                            result = db_manager.import_database_snapshot(sql_content)
+                            if result:
+                                st.success("✅ Database restored successfully!")
+                                st.info("Please refresh the page to see the restored data.")
+                                
+                                # Show what was imported
+                                with sqlite3.connect("court_management.db") as conn:
+                                    cursor = conn.cursor()
+                                    
+                                    # Count data
+                                    cursor.execute("SELECT COUNT(*) FROM divisions")
+                                    div_count = cursor.fetchone()[0]
+                                    cursor.execute("SELECT COUNT(*) FROM courts")
+                                    court_count = cursor.fetchone()[0]
+                                    cursor.execute("SELECT COUNT(*) FROM posts")
+                                    post_count = cursor.fetchone()[0]
+                                    cursor.execute("SELECT COUNT(*) FROM employees")
+                                    emp_count = cursor.fetchone()[0]
+                                    
+                                    st.info(f"📊 Imported: {div_count} divisions, {court_count} courts, {post_count} posts, {emp_count} employees")
+                                
+                                st.rerun()
+                            else:
+                                st.error("❌ Failed to restore database.")
+                                st.error("Please check the file format and try again.")
+                        except Exception as e:
+                            st.error(f"❌ Error during restore: {str(e)}")
+                            st.error("Please try again or contact administrator.")
                         
             except Exception as e:
                 st.error(f"Error reading file: {e}")

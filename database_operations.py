@@ -610,20 +610,38 @@ class DatabaseManager:
                         current_statement = ""
                 
                 # Execute each statement
+                success_count = 0
+                error_count = 0
+                
                 for statement in statements:
                     if statement and not statement.startswith('--'):
                         try:
                             cursor.execute(statement)
+                            success_count += 1
                         except Exception as stmt_error:
-                            print(f"Error executing statement: {stmt_error}")
-                            print(f"Statement: {statement[:100]}...")
+                            error_count += 1
+                            # Skip sqlite_sequence errors (they're expected)
+                            if "sqlite_sequence" not in str(stmt_error):
+                                print(f"Error executing statement: {stmt_error}")
+                                print(f"Statement: {statement[:100]}...")
                             continue
                 
                 # Re-enable foreign key constraints
                 cursor.execute("PRAGMA foreign_keys = ON")
                 
                 conn.commit()
-                return True
+                
+                print(f"Import completed: {success_count} statements successful, {error_count} errors")
+                
+                # Check if we have data
+                cursor.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table'")
+                table_count = cursor.fetchone()[0]
+                
+                if table_count > 0:
+                    return True
+                else:
+                    print("No tables were created during import")
+                    return False
                 
         except Exception as e:
             print(f"Error importing database: {e}")
