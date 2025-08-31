@@ -48,62 +48,73 @@ class SidebarComponent:
             
             if not divisions:
                 st.warning("No divisions found. Please add divisions first.")
-                return None, None
+                # Don't return here - continue to show user management
             
-            # Create division options for dropdown with "All divisions" option
-            division_options = {"All Divisions": "all"}  # Add "All Divisions" option
-            division_options.update({div['division_name']: div['division_id'] for div in divisions})
-            
-            selected_division_name = st.selectbox(
-                "Choose Division:",
-                options=list(division_options.keys()),
-                key="division_select"
-            )
-            
-            selected_division_id = division_options.get(selected_division_name)
-            
-            # Courts dropdown (based on selected division)
-            st.subheader("⚖️ Select Court")
-            
-            if selected_division_id == "all":
-                # Show all courts when "All Divisions" is selected
-                courts = db_manager.get_all_courts()
-                court_options = {"All Courts": "all"}  # Add "All Courts" option
+            if divisions:
+                # Create division options for dropdown with "All divisions" option
+                division_options = {"All Divisions": "all"}  # Add "All Divisions" option
+                division_options.update({div['division_name']: div['division_id'] for div in divisions})
                 
-                if courts:
-                    # Add individual courts
-                    for court in courts:
-                        if court['court_number']:
-                            court_options[f"{court['court_name']} ({court['court_number']})"] = court['court_id']
-                        else:
-                            court_options[court['court_name']] = court['court_id']
-                else:
-                    st.info("No courts found. Please add courts first.")
-                    return selected_division_id, None
+                selected_division_name = st.selectbox(
+                    "Choose Division:",
+                    options=list(division_options.keys()),
+                    key="division_select"
+                )
+                
+                selected_division_id = division_options.get(selected_division_name)
+                
+                # Courts dropdown (based on selected division)
+                st.subheader("⚖️ Select Court")
+                
+                if selected_division_id == "all":
+                    # Show all courts when "All Divisions" is selected
+                    courts = db_manager.get_all_courts()
+                    court_options = {"All Courts": "all"}  # Add "All Courts" option
                     
-            else:
-                # Show courts for specific division
-                courts = db_manager.get_courts_by_division(selected_division_id)
-                court_options = {"All Courts": "all"}  # Add "All Courts" option
-                
-                if not courts:
-                    st.info(f"No courts found for {selected_division_name}. Please add courts first.")
-                    return selected_division_id, None
-                
-                # Add individual courts for the selected division
-                for court in courts:
-                    if court['court_number']:
-                        court_options[f"{court['court_name']} ({court['court_number']})"] = court['court_id']
+                    if courts:
+                        # Add individual courts
+                        for court in courts:
+                            if court['court_number']:
+                                court_options[f"{court['court_name']} ({court['court_number']})"] = court['court_id']
+                            else:
+                                court_options[court['court_name']] = court['court_id']
                     else:
-                        court_options[court['court_name']] = court['court_id']
-            
-            selected_court_name = st.selectbox(
-                "Choose Court:",
-                options=list(court_options.keys()),
-                key="court_select"
-            )
-            
-            selected_court_id = court_options.get(selected_court_name)
+                        st.info("No courts found. Please add courts first.")
+                        selected_division_id = None
+                        selected_court_id = None
+                    else:
+                        selected_court_name = st.selectbox(
+                            "Choose Court:",
+                            options=list(court_options.keys()),
+                            key="court_select"
+                        )
+                        selected_court_id = court_options.get(selected_court_name)
+                        
+                else:
+                    # Show courts for specific division
+                    courts = db_manager.get_courts_by_division(selected_division_id)
+                    court_options = {"All Courts": "all"}  # Add "All Courts" option
+                    
+                    if not courts:
+                        st.info(f"No courts found for {selected_division_name}. Please add courts first.")
+                        selected_court_id = None
+                    else:
+                        # Add individual courts for the selected division
+                        for court in courts:
+                            if court['court_number']:
+                                court_options[f"{court['court_name']} ({court['court_number']})"] = court['court_id']
+                            else:
+                                court_options[court['court_name']] = court['court_id']
+                        
+                        selected_court_name = st.selectbox(
+                            "Choose Court:",
+                            options=list(court_options.keys()),
+                            key="court_select"
+                        )
+                        selected_court_id = court_options.get(selected_court_name)
+            else:
+                selected_division_id = None
+                selected_court_id = None
             
             # User info and logout (moved to bottom)
             if auth and auth.check_auth():
@@ -128,8 +139,6 @@ class SidebarComponent:
             # Display selected information (removed green confirmation text)
             
             return selected_division_id, selected_court_id
-            
-            return selected_division_id, None
     
     def get_selected_info(self) -> Tuple[str, str]:
         """Get the display names of selected division and court"""
