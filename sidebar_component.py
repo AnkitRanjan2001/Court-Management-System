@@ -42,6 +42,9 @@ class SidebarComponent:
                 st.session_state.court_select = "All Courts"
                 st.rerun()
             
+            # Check if overview button was clicked (for system overview)
+            overview_clicked = st.session_state.get('division_select') == "All Divisions"
+            
             # Divisions dropdown (only divisions with parent_id != NULL)
             st.subheader("🏛️ Select Division")
             divisions = db_manager.get_divisions_with_parent()
@@ -136,9 +139,11 @@ class SidebarComponent:
                 if st.button("🚪 Logout", use_container_width=True):
                     auth.logout()
             
-            # Display selected information (removed green confirmation text)
-            
-            return selected_division_id, selected_court_id
+            # Return logic - handle overview case
+            if overview_clicked:
+                return "all", "all"
+            else:
+                return selected_division_id, selected_court_id
     
     def get_selected_info(self) -> Tuple[str, str]:
         """Get the display names of selected division and court"""
