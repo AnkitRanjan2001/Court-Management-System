@@ -582,13 +582,45 @@ class DatabaseManager:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 
-                # Split SQL dump into individual statements
-                statements = sql_dump.split(';')
+                # Disable foreign key constraints temporarily
+                cursor.execute("PRAGMA foreign_keys = OFF")
                 
+                # Clear existing data (drop and recreate tables)
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                tables = cursor.fetchall()
+                
+                for table in tables:
+                    table_name = table[0]
+                    if table_name != 'sqlite_sequence':  # Don't drop sqlite_sequence
+                        cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
+                
+                # Split SQL dump into individual statements
+                statements = []
+                current_statement = ""
+                
+                for line in sql_dump.split('\n'):
+                    line = line.strip()
+                    if line.startswith('--') or not line:  # Skip comments and empty lines
+                        continue
+                    
+                    current_statement += line + " "
+                    
+                    if line.endswith(';'):
+                        statements.append(current_statement.strip())
+                        current_statement = ""
+                
+                # Execute each statement
                 for statement in statements:
-                    statement = statement.strip()
                     if statement and not statement.startswith('--'):
-                        cursor.execute(statement)
+                        try:
+                            cursor.execute(statement)
+                        except Exception as stmt_error:
+                            print(f"Error executing statement: {stmt_error}")
+                            print(f"Statement: {statement[:100]}...")
+                            continue
+                
+                # Re-enable foreign key constraints
+                cursor.execute("PRAGMA foreign_keys = ON")
                 
                 conn.commit()
                 return True
