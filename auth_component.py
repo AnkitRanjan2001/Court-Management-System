@@ -248,43 +248,79 @@ class AuthComponent:
         """Render change password form"""
         st.subheader("🔐 Change Password")
         
+        # Check if current_user is valid
+        if not current_user or 'username' not in current_user:
+            st.error("User session is invalid. Please log in again.")
+            return
+        
         # Create form fields
         with st.form("change_password_form"):
-            current_password = st.text_input("Current Password", type="password")
-            new_password = st.text_input("New Password", type="password")
-            confirm_password = st.text_input("Confirm New Password", type="password")
+            current_password = st.text_input("Current Password", type="password", placeholder="Enter your current password")
+            new_password = st.text_input("New Password", type="password", placeholder="Enter new password (min 6 characters)")
+            confirm_password = st.text_input("Confirm New Password", type="password", placeholder="Confirm new password")
             
             submitted = st.form_submit_button("💾 Update Password")
         
         # Handle form submission outside the form
         if submitted:
-            if not all([current_password, new_password, confirm_password]):
-                st.error("Please fill all fields!")
-            elif new_password != confirm_password:
+            # Validate inputs
+            if not current_password:
+                st.error("Please enter your current password!")
+                return
+            if not new_password:
+                st.error("Please enter a new password!")
+                return
+            if not confirm_password:
+                st.error("Please confirm your new password!")
+                return
+            
+            if new_password != confirm_password:
                 st.error("New passwords don't match!")
-            elif len(new_password) < 6:
+                return
+            
+            if len(new_password) < 6:
                 st.error("Password must be at least 6 characters long!")
-            else:
-                # Verify current password
-                try:
-                    with sqlite3.connect(self.db_path) as conn:
-                        cursor = conn.cursor()
-                        cursor.execute("SELECT password_hash FROM users WHERE username = ?", (current_user['username'],))
-                        current_hash = cursor.fetchone()[0]
-                        
-                        if self.verify_password(current_password, current_hash):
-                            # Update password
-                            new_hash = self.hash_password(new_password)
-                            cursor.execute("""
-                                UPDATE users SET password_hash = ? WHERE username = ?
-                            """, (new_hash, current_user['username']))
-                            conn.commit()
-                            st.success("Password updated successfully!")
-                            st.rerun()
-                        else:
-                            st.error("Current password is incorrect!")
-                except Exception as e:
-                    st.error(f"Error updating password: {e}")
+                return
+            
+            # Verify current password and update
+            try:
+                with sqlite3.connect(self.db_path) as conn:
+                    cursor = conn.cursor()
+                    
+                    # Get current password hash
+                    cursor.execute("SELECT password_hash FROM users WHERE username = ?", (current_user['username'],))
+                    result = cursor.fetchone()
+                    
+                    if not result:
+                        st.error("User not found in database!")
+                        return
+                    
+                    current_hash = result[0]
+                    
+                    # Verify current password
+                    if not self.verify_password(current_password, current_hash):
+                        st.error("Current password is incorrect!")
+                        return
+                    
+                    # Update password
+                    new_hash = self.hash_password(new_password)
+                    cursor.execute("""
+                        UPDATE users SET password_hash = ? WHERE username = ?
+                    """, (new_hash, current_user['username']))
+                    conn.commit()
+                    
+                    st.success("✅ Password updated successfully!")
+                    st.info("Please log in again with your new password.")
+                    
+                    # Clear session and redirect to login
+                    st.session_state['show_change_password'] = False
+                    st.session_state['user'] = None
+                    st.session_state['show_login'] = True
+                    st.rerun()
+                    
+            except Exception as e:
+                st.error(f"❌ Error updating password: {str(e)}")
+                st.error("Please try again or contact administrator.")
     
     def logout(self):
         """Clear session state and logout user"""
