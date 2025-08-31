@@ -15,6 +15,16 @@ def main():
         initial_sidebar_state="expanded"
     )
     
+    # Initialize session state
+    if 'user' not in st.session_state:
+        st.session_state['user'] = None
+    if 'show_login' not in st.session_state:
+        st.session_state['show_login'] = True
+    if 'show_user_management' not in st.session_state:
+        st.session_state['show_user_management'] = False
+    if 'show_change_password' not in st.session_state:
+        st.session_state['show_change_password'] = False
+    
     # Initialize authentication
     auth = AuthComponent()
     
