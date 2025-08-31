@@ -57,6 +57,11 @@ class SystemManagementComponent:
         # Quick Actions
         st.subheader("🔧 Quick Actions")
         self._render_quick_actions()
+        
+        # Database Management (always show for admin)
+        st.markdown("---")
+        st.subheader("💾 Database Management")
+        self._render_database_management()
     
     def _render_system_summary(self):
         """Render system summary statistics"""
@@ -171,9 +176,6 @@ class SystemManagementComponent:
                 self._export_all_data()
         
         # Database backup and restore (admin only)
-        st.markdown("---")
-        st.subheader("💾 Database Management")
-        
         # Check if current user is admin
         current_user = st.session_state.get('user')
         if current_user and current_user.get('role') == 'admin':
@@ -185,6 +187,23 @@ class SystemManagementComponent:
             
             with col2:
                 if st.button("📥 Restore Database"):
+                    self._show_restore_database()
+        else:
+            st.info("🔒 Database management features are only available to administrators.")
+    
+    def _render_database_management(self):
+        """Render database management section"""
+        # Check if current user is admin
+        current_user = st.session_state.get('user')
+        if current_user and current_user.get('role') == 'admin':
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                if st.button("📤 Export Database Snapshot", key="export_db"):
+                    self._export_database_snapshot()
+            
+            with col2:
+                if st.button("📥 Restore Database", key="restore_db"):
                     self._show_restore_database()
         else:
             st.info("🔒 Database management features are only available to administrators.")
