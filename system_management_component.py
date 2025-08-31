@@ -496,13 +496,27 @@ class SystemManagementComponent:
                 # Read the uploaded file
                 sql_content = uploaded_file.read().decode('utf-8')
                 
+                # Show preview of the file
+                st.info(f"📄 File uploaded: {uploaded_file.name}")
+                st.info(f"📏 File size: {len(sql_content)} characters")
+                
+                # Show first few lines as preview
+                lines = sql_content.split('\n')[:5]
+                st.text("📋 File preview:")
+                for line in lines:
+                    st.text(line)
+                if len(sql_content.split('\n')) > 5:
+                    st.text("... (file continues)")
+                
                 if st.button("🔄 Restore Database", type="primary"):
-                    if db_manager.import_database_snapshot(sql_content):
-                        st.success("✅ Database restored successfully!")
-                        st.info("Please refresh the page to see the restored data.")
-                        st.rerun()
-                    else:
-                        st.error("❌ Failed to restore database.")
+                    with st.spinner("Restoring database..."):
+                        if db_manager.import_database_snapshot(sql_content):
+                            st.success("✅ Database restored successfully!")
+                            st.info("Please refresh the page to see the restored data.")
+                            st.rerun()
+                        else:
+                            st.error("❌ Failed to restore database.")
                         
             except Exception as e:
                 st.error(f"Error reading file: {e}")
+                st.error("Please make sure the file is a valid SQL database snapshot.")
